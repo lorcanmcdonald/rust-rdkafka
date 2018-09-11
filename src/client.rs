@@ -269,8 +269,8 @@ impl Drop for NativeTopic {
 }
 
 pub(crate) unsafe extern "C" fn native_log_cb<C: ClientContext>(
-        client: *const RDKafka, level: i32,
-        fac: *const i8, buf: *const i8) {
+        client: *const RDKafka, level: ::std::os::raw::c_int,
+        fac: *const ::std::os::raw::c_char, buf: *const ::std::os::raw::c_char) {
     let fac = CStr::from_ptr(fac).to_string_lossy();
     let log_message = CStr::from_ptr(buf).to_string_lossy();
 
