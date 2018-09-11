@@ -6,6 +6,8 @@ use std::ffi::{CString, CStr};
 use std::slice;
 use std::mem;
 use std::os::raw::c_void;
+use std::os::raw::c_int;
+use std::os::raw::c_char;
 use std::ptr;
 use std::time::Duration;
 
@@ -114,7 +116,7 @@ impl<C: ClientContext> Client<C> {
     pub fn new(config: &ClientConfig, native_config: NativeClientConfig, rd_kafka_type: RDKafkaType,
                context: C)
             -> KafkaResult<Client<C>> {
-        let errstr = [0i8; 1024];
+        let errstr = [0; 1024];
         let mut boxed_context = Box::new(context);
         unsafe { rdsys::rd_kafka_conf_set_opaque(native_config.ptr(), (&mut *boxed_context) as *mut C as *mut c_void) };
         unsafe { rdsys::rd_kafka_conf_set_log_cb(native_config.ptr(), Some(native_log_cb::<C>)) };
@@ -122,7 +124,7 @@ impl<C: ClientContext> Client<C> {
         unsafe { rdsys::rd_kafka_conf_set_error_cb(native_config.ptr(), Some(native_error_cb::<C>)) };
 
         let client_ptr = unsafe {
-            rdsys::rd_kafka_new(rd_kafka_type, native_config.ptr_move(), errstr.as_ptr() as *mut i8, errstr.len())
+            rdsys::rd_kafka_new(rd_kafka_type, native_config.ptr_move(), errstr.as_ptr() as *mut c_char, errstr.len())
         };
         trace!("Create new librdkafka client {:p}", client_ptr);
 
@@ -131,7 +133,7 @@ impl<C: ClientContext> Client<C> {
             return Err(KafkaError::ClientCreation(descr));
         }
 
-        unsafe { rdsys::rd_kafka_set_log_level(client_ptr, config.log_level as i32) };
+        unsafe { rdsys::rd_kafka_set_log_level(client_ptr, config.log_level as c_int) };
 
         Ok(Client {
             native: unsafe { NativeClient::from_ptr(client_ptr) },
@@ -181,7 +183,7 @@ impl<C: ClientContext> Client<C> {
     }
 
     /// Returns high and low watermark for the specified topic and partition.
-    pub fn fetch_watermarks<T: Into<Option<Duration>>>(&self, topic: &str, partition: i32, timeout: T) -> KafkaResult<(i64, i64)> {
+    pub fn fetch_watermarks<T: Into<Option<Duration>>>(&self, topic: &str, partition: c_int, timeout: T) -> KafkaResult<(i64, i64)> {
         let mut low = -1;
         let mut high = -1;
         let topic_c = CString::new(topic.to_string())?;
@@ -269,8 +271,8 @@ impl Drop for NativeTopic {
 }
 
 pub(crate) unsafe extern "C" fn native_log_cb<C: ClientContext>(
-        client: *const RDKafka, level: ::std::os::raw::c_int,
-        fac: *const ::std::os::raw::c_char, buf: *const ::std::os::raw::c_char) {
+        client: *const RDKafka, level: c_int,
+        fac: *const c_char, buf: *const c_char) {
     let fac = CStr::from_ptr(fac).to_string_lossy();
     let log_message = CStr::from_ptr(buf).to_string_lossy();
 
@@ -280,8 +282,8 @@ pub(crate) unsafe extern "C" fn native_log_cb<C: ClientContext>(
 }
 
 pub(crate) unsafe extern "C" fn native_stats_cb<C: ClientContext>(
-        _conf: *mut RDKafka, json: *mut i8, json_len: usize,
-        opaque: *mut c_void) -> i32 {
+        _conf: *mut RDKafka, json: *mut c_char, json_len: usize,
+        opaque: *mut c_void) -> c_int {
     let context = Box::from_raw(opaque as *mut C);
 
     let mut bytes_vec = Vec::new();
@@ -301,7 +303,7 @@ pub(crate) unsafe extern "C" fn native_stats_cb<C: ClientContext>(
 }
 
 pub(crate) unsafe extern "C" fn native_error_cb<C: ClientContext>(
-        _client: *mut RDKafka, err: i32, reason: *const i8,
+        _client: *mut RDKafka, err: c_int, reason: *const c_char,
         opaque: *mut c_void) {
     let err = rdsys::primitive_to_rd_kafka_resp_err_t(err)
         .expect("global error not an rd_kafka_resp_err_t");

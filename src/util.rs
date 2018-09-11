@@ -3,6 +3,7 @@ use rdsys;
 
 use std::ffi::CStr;
 use std::os::raw::c_void;
+use std::os::raw::c_char;
 use std::ptr;
 use std::slice;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -102,12 +103,12 @@ impl<T: Send + Sync> IntoOpaque for Box<T> {
 
 // TODO: check if the implementation returns a copy of the data and update the documentation
 /// Converts a byte array representing a C string into a String.
-pub unsafe fn bytes_cstr_to_owned(bytes_cstr: &[i8]) -> String {
+pub unsafe fn bytes_cstr_to_owned(bytes_cstr: &[c_char]) -> String {
     CStr::from_ptr(bytes_cstr.as_ptr()).to_string_lossy().into_owned()
 }
 
 /// Converts a C string into a String.
-pub unsafe fn cstr_to_owned(cstr: *const i8) -> String {
+pub unsafe fn cstr_to_owned(cstr: *const c_char) -> String {
     CStr::from_ptr(cstr).to_string_lossy().into_owned()
 }
 
