@@ -48,8 +48,6 @@ fn main() {
             }
             Err(_) => {
                 println_stderr!("librdkafka {} cannot be found on the system", librdkafka_version);
-                println_stderr!("Dynamic linking failed. Exiting.");
-                process::exit(1);
             }
         }
     } else {
