@@ -4,15 +4,17 @@
 #[allow(non_snake_case)]
 mod linux_64;
 
+#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+pub use self::linux_64::*;
+
 #[cfg(all(target_os = "linux", target_pointer_width = "32"))]
 #[allow(non_camel_case_types)]
 #[allow(non_upper_case_globals)]
 #[allow(non_snake_case)]
 mod linux_32;
 
-
-#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
-pub use self::linux_64::*;
+#[cfg(all(target_os = "linux", target_pointer_width = "32"))]
+pub use self::linux_32::*;
 
 #[cfg(all(target_os = "macos", target_pointer_width = "64"))]
 #[allow(non_camel_case_types)]
